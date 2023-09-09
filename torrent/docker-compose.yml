@@ -1,0 +1,220 @@
+version: "3.0"
+services:
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: mediastack-gluetun
+    ports:
+      - 8088:8080 # qbittorrent
+      - 14801:14801 # qbittorrent
+      - 14801:14801/udp # qbittorrent
+      - 8096:8096 # jellyfin
+      - 8920:8920 # jellyfin
+      - 7359:7359/udp # jellyfin
+      # - 1900:1900/udp   # jellyfin
+      - 8989:8989 # sonarr
+      - 9696:9696 # prowlarr
+      - 7878:7878 # radarr
+      - 8787:8787 # readarr
+      - 5055:5055 # jellyseerr
+    cap_add:
+      - NET_ADMIN
+    networks:
+      - mediaserver
+    environment:
+      - VPN_SERVICE_PROVIDER=mullvad
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
+      - SERVER_CITIES=${SERVER_CITIES}
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: media-stackjellyseerr
+    environment:
+      - LOG_LEVEL=debug
+      - TZ=Europe/Berlin
+    volumes:
+      - ./jellyseerr/config:/app/config
+    network_mode: service:gluetun
+    restart: unless-stopped
+    depends_on:
+      - gluetun
+    labels:
+      traefik.enable: true
+      traefik.http.routers.jellyseerr.rule: Host(`request.${DOMAIN}`)
+      traefik.http.routers.jellyseerr.middlewares: middlewares-authentik@file
+      traefik.http.routers.jellyseerr.entrypoints: https
+      traefik.http.routers.jellyseerr.tls.certresolver: cloudflare
+      traefik.http.services.jellyseerr.loadbalancer.server.port: 5055
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: mediastack-jellyfin
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Berlin
+    volumes:
+      - ./jellyfin/library:/config
+      - shows:/data/tvshows
+      - movies:/data/movies
+      - books:/data/audiobooks
+    network_mode: service:gluetun
+    restart: unless-stopped
+    depends_on:
+      - gluetun
+    labels:
+      traefik.enable: true
+      traefik.http.routers.jelly.rule: Host(`watch.${DOMAIN}`)
+      traefik.http.routers.jelly.entrypoints: https
+      traefik.http.routers.jelly.tls.certresolver: cloudflare
+      traefik.http.services.jelly.loadbalancer.server.port: 8096
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: mediastack-qbittorrent
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Berlin
+      - WEBUI_PORT=8080
+    volumes:
+      - ./qbittorrent/appdata/config:/config
+      - downloads:/downloads
+    depends_on:
+      - gluetun
+    network_mode: "service:gluetun"
+    restart: unless-stopped
+    stop_grace_period: 5m
+    labels:
+      traefik.enable: true
+      traefik.http.routers.qbittorrent.rule: Host(`qbittorrent.${DOMAIN}`)
+      traefik.http.routers.qbittorrent.middlewares: middlewares-authentik@file
+      traefik.http.routers.qbittorrent.entrypoints: https
+      traefik.http.routers.qbittorrent.tls.certresolver: cloudflare
+      traefik.http.services.qbittorrent.loadbalancer.server.port: 8080
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: mediastack-sonarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Berlin
+    volumes:
+      - ./sonarr/data:/config
+      - shows:/tv
+      - downloads:/downloads
+    depends_on:
+      - gluetun
+    network_mode: "service:gluetun"
+    restart: unless-stopped
+    labels:
+      traefik.enable: true
+      traefik.http.routers.sonarr.rule: Host(`sonarr.${DOMAIN}`)
+      traefik.http.routers.sonarr.middlewares: middlewares-authentik@file
+      traefik.http.routers.sonarr.entrypoints: https
+      traefik.http.routers.sonarr.tls.certresolver: cloudflare
+      traefik.http.services.sonarr.loadbalancer.server.port: 8989
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: mediastack-radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Berlin
+    volumes:
+      - ./radarr/data:/config
+      - movies:/movies #optional
+      - downloads:/downloads #optional
+    depends_on:
+      - gluetun
+    network_mode: "service:gluetun"
+    restart: unless-stopped
+    labels:
+      traefik.enable: true
+      traefik.http.routers.radarr.rule: Host(`radarr.${DOMAIN}`)
+      traefik.http.routers.radarr.entrypoints: https
+      traefik.http.routers.radarr.tls.certresolver: cloudflare
+      traefik.http.services.radarr.loadbalancer.server.port: 7878
+  readarr:
+    image: lscr.io/linuxserver/readarr:develop
+    container_name: readarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Berlin
+    volumes:
+      - ./readarr/data:/config
+      - books:/books
+      - downloads:/downloads
+    depends_on:
+      - gluetun
+    network_mode: "service:gluetun"
+    restart: unless-stopped
+    labels:
+      traefik.enable: true
+      traefik.http.routers.readarr.rule: Host(`readarr.${DOMAIN}`)
+      traefik.http.routers.readarr.entrypoints: https
+      traefik.http.routers.readarr.tls.certresolver: cloudflare
+      traefik.http.services.readarr.loadbalancer.server.port: 8787
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: mediastack-prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Berlin
+    volumes:
+      - ./prowlarr/data:/config
+    depends_on:
+      - gluetun
+    network_mode: "service:gluetun"
+    restart: unless-stopped
+    labels:
+      traefik.enable: true
+      traefik.http.routers.prowlarr.rule: Host(`prowlarr.${DOMAIN}`)
+      traefik.http.routers.prowlarr.entrypoints: https
+      traefik.http.routers.prowlarr.tls.certresolver: cloudflare
+      traefik.http.services.prowlarr.loadbalancer.server.port: 9696
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: mediaserver-audiobookshelf
+    volumes:
+      - books:/audiobooks
+      - ./audiobookshelf/config:/config
+      - ./audiobookshelf/metadata:/metadata
+    networks:
+      - mediaserver
+    restart: unless-stopped
+    labels:
+      traefik.enable: true
+      traefik.http.routers.audio.rule: Host(`audio.${DOMAIN}`)
+      traefik.http.routers.audio.entrypoints: https
+      traefik.http.routers.audio.tls.certresolver: cloudflare
+      traefik.http.services.audio.loadbalancer.server.port: 80
+volumes:
+  shows:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "./media/shows"
+  movies:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "./media/movies"
+  downloads:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "./media/downloads"
+  books:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "./media/books"
+networks:
+  mediaserver:
+    name: mediaserver
+    external: true

@@ -1,0 +1,11 @@
+.env
+audiobookshelf
+jellyfin
+jellyseerr
+media
+prowlarr
+qbittorrent
+radarr
+readarr
+sonarr
+acme.json
