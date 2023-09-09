@@ -40,7 +40,7 @@ services:
       - gluetun
     labels:
       traefik.enable: true
-      traefik.http.routers.jellyseerr.rule: Host(`request.${DOMAIN}`)
+      # traefik.http.routers.jellyseerr.rule: Host(`request.${DOMAIN}`)
       traefik.http.routers.jellyseerr.middlewares: middlewares-authentik@file
       traefik.http.routers.jellyseerr.entrypoints: https
       traefik.http.routers.jellyseerr.tls.certresolver: cloudflare
@@ -64,6 +64,7 @@ services:
     labels:
       traefik.enable: true
       traefik.http.routers.jelly.rule: Host(`watch.${DOMAIN}`)
+      # traefik.http.routers.jelly.middlewares: middlewares-authentik@file
       traefik.http.routers.jelly.entrypoints: https
       traefik.http.routers.jelly.tls.certresolver: cloudflare
       traefik.http.services.jelly.loadbalancer.server.port: 8096
@@ -130,6 +131,7 @@ services:
     labels:
       traefik.enable: true
       traefik.http.routers.radarr.rule: Host(`radarr.${DOMAIN}`)
+      traefik.http.routers.radarr.middlewares: middlewares-authentik@file
       traefik.http.routers.radarr.entrypoints: https
       traefik.http.routers.radarr.tls.certresolver: cloudflare
       traefik.http.services.radarr.loadbalancer.server.port: 7878
@@ -151,6 +153,7 @@ services:
     labels:
       traefik.enable: true
       traefik.http.routers.readarr.rule: Host(`readarr.${DOMAIN}`)
+      traefik.http.routers.readarr.middlewares: middlewares-authentik@file
       traefik.http.routers.readarr.entrypoints: https
       traefik.http.routers.readarr.tls.certresolver: cloudflare
       traefik.http.services.readarr.loadbalancer.server.port: 8787
@@ -170,6 +173,7 @@ services:
     labels:
       traefik.enable: true
       traefik.http.routers.prowlarr.rule: Host(`prowlarr.${DOMAIN}`)
+      traefik.http.routers.prowlarr.middlewares: middlewares-authentik@file
       traefik.http.routers.prowlarr.entrypoints: https
       traefik.http.routers.prowlarr.tls.certresolver: cloudflare
       traefik.http.services.prowlarr.loadbalancer.server.port: 9696
@@ -186,6 +190,7 @@ services:
     labels:
       traefik.enable: true
       traefik.http.routers.audio.rule: Host(`audio.${DOMAIN}`)
+      traefik.http.routers.audio.middlewares: middlewares-authentik@file
       traefik.http.routers.audio.entrypoints: https
       traefik.http.routers.audio.tls.certresolver: cloudflare
       traefik.http.services.audio.loadbalancer.server.port: 80

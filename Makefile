@@ -1,4 +1,5 @@
 recreate: 
+	docker-compose -f ./dnsmasq/docker-compose.yml up -d --force-recreate --remove-orphans
 	docker-compose -f ./proxy/docker-compose.yml up -d --force-recreate --remove-orphans
 	docker-compose -f ./auth/docker-compose.yml up -d --force-recreate --remove-orphans
 	docker-compose -f ./torrent/docker-compose.yml up -d --force-recreate --remove-orphans
