@@ -7,3 +7,6 @@ down:
 	docker-compose -f ./proxy/docker-compose.yml down
 	docker-compose -f ./auth/docker-compose.yml down
 	docker-compose -f ./torrent/docker-compose.yml down
+
+push: 
+	gitleaks detect && git push
