@@ -23,6 +23,15 @@ services:
     env_file:
       - .env
 
+  cloudflare-ddns:
+    image: oznu/cloudflare-ddns:latest
+    restart: always
+    environment:
+      - API_KEY=${CF_DNS_API_TOKEN}
+      - ZONE=${DOMAIN}
+      - SUBDOMAIN=*
+      - PROXIED=false
+
 networks:
   mediaserver:
     name: mediaserver
